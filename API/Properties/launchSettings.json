@@ -7,7 +7,37 @@
         "ASPNETCORE_ENVIRONMENT": "Development"
       }
     },
-    "API": {
+    "WSL": {
+      "commandName": "WSL2",
+      "launchBrowser": true,
+      "launchUrl": "https://localhost:5001/",
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "QA",
+        "ASPNETCORE_URLS": "https://localhost:5001;http://localhost:5000"
+      },
+      "distributionName": ""
+    },
+    "API_QA": {
+      "commandName": "Project",
+      "launchBrowser": true,
+      "launchUrl": "https://localhost:5001",
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "QA"
+      },
+      "dotnetRunMessages": "true",
+      "applicationUrl": "https://localhost:5001;http://localhost:5000"
+    },
+    "API_UAT": {
+      "commandName": "Project",
+      "launchBrowser": true,
+      "launchUrl": "https://localhost:5001",
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "UAT"
+      },
+      "dotnetRunMessages": "true",
+      "applicationUrl": "https://localhost:5001;http://localhost:5000"
+    },
+    "API_DEV": {
       "commandName": "Project",
       "launchBrowser": true,
       "launchUrl": "https://localhost:5001",

@@ -19,9 +19,9 @@ namespace API.Extensions
                cfg.AddProfile<AutoMapperProfiles>(); // Add your AutoMapper configuration here
             });
             services.AddSingleton<PresenceTracker>();
-            //services.Configure<CloudinarySettings>(config.GetSection("CloudinarySettings"));
+            services.Configure<CloudinarySettings>(config.GetSection("CloudinarySettings"));
             services.AddScoped<ITokenService, TokenService>();
-            //services.AddScoped<IPhotoService, PhotoService>();
+            services.AddScoped<IPhotoService, PhotoService>();
             services.AddScoped<IUnitOfWork, UnitOfWork>();
             services.AddScoped<LogUserActivity>();
             services.AddDbContext<DataContext>(options =>
