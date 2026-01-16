@@ -1,13 +1,6 @@
-using System;
-using API.Data;
 using API.Helpers;
-using API.Interfaces;
 using API.Services;
-using API.SignalR;
-using AutoMapper;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
+using CloudinaryDotNet;
 
 namespace API.Extensions
 {
@@ -15,13 +8,33 @@ namespace API.Extensions
     {
         public static IServiceCollection AddApplicationServices(this IServiceCollection services, IConfiguration config)
         {
+            services.AddMemoryCache();
             services.AddAutoMapper(cfg => {
-               cfg.AddProfile<AutoMapperProfiles>(); // Add your AutoMapper configuration here
+               cfg.AddProfile<AutoMapperProfiles>(); 
             });
+            services.AddHttpClient();
             services.AddSingleton<PresenceTracker>();
-            services.Configure<CloudinarySettings>(config.GetSection("CloudinarySettings"));
-            services.AddScoped<ITokenService, TokenService>();
-            services.AddScoped<IPhotoService, PhotoService>();
+			services.AddScoped<CloudinaryService>();
+            services.AddScoped<ExposurePolicyService>();
+			services.Configure<CloudinarySettings>(config.GetSection("CloudinarySettings"));
+            services.AddSingleton(provider =>
+            {
+
+                var account = new Account(
+                    config["CloudinarySettings:CloudName"],
+                    config["CloudinarySettings:ApiKey"],
+                    config["CloudinarySettings:ApiSecret"]
+                );
+                return new Cloudinary(account);
+            });
+            
+            services.AddScoped<IUserRepository, UserRepository>();
+            services.AddScoped<IStatsService, StatsService>();
+            services.AddScoped<ExposurePolicyService>();
+			services.AddScoped<RecommendationScorer>();
+			services.AddScoped<ITokenService, TokenService>();
+            services.AddScoped<IDiscoveryService,DiscoveryService>();
+			services.AddScoped<IPhotoService, PhotoService>();
             services.AddScoped<IUnitOfWork, UnitOfWork>();
             services.AddScoped<LogUserActivity>();
             services.AddDbContext<DataContext>(options =>

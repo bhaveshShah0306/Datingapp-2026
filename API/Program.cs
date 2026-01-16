@@ -8,12 +8,14 @@ var builder = WebApplication.CreateBuilder(args);
 
 // add services to the container
 builder.Services.AddApplicationServices(builder.Configuration);
-
 builder.Services.AddIdentityServices(builder.Configuration);
+
 builder.Services.AddControllers();
 builder.Services.AddCors();
                 
 builder.Services.AddSignalR();
+
+
 
 // Configure the HTTP request pipeline
 
@@ -23,13 +25,22 @@ app.UseMiddleware<ExceptionMiddleware>();
 
 app.UseHttpsRedirection();
 
-app.UseCors(x => x.AllowAnyHeader()
-	.AllowAnyMethod()
-	.AllowCredentials()
-	.WithOrigins("https://localhost:4200"));
+if (app.Environment.IsDevelopment())
+{
+    app.UseCors(x => x.AllowAnyHeader()
+    .AllowAnyMethod()
+    .AllowCredentials()
+    .WithOrigins("http://localhost:4200", "https://localhost:4200"));
+}
+else
+{
+	app.UseCors(x => x.AllowAnyHeader()
+		.AllowAnyMethod()
+		.AllowCredentials()
+		.WithOrigins("https://localhost:4200")); 
+}
 
-
-app.UseAuthentication();
+    app.UseAuthentication();
 app.UseAuthorization();
 
 app.UseDefaultFiles();
