@@ -1,5 +1,6 @@
 using API.Helpers;
 using API.Services;
+using API.Services.API.Services;
 using CloudinaryDotNet;
 
 namespace API.Extensions
@@ -27,8 +28,8 @@ namespace API.Extensions
                 );
                 return new Cloudinary(account);
             });
-            
-            services.AddScoped<IUserRepository, UserRepository>();
+            services.AddScoped<IEmailService, EmailService>();       
+			services.AddScoped<IUserRepository, UserRepository>();
             services.AddScoped<IStatsService, StatsService>();
             services.AddScoped<ExposurePolicyService>();
 			services.AddScoped<RecommendationScorer>();

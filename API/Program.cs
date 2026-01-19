@@ -30,7 +30,7 @@ if (app.Environment.IsDevelopment())
     app.UseCors(x => x.AllowAnyHeader()
     .AllowAnyMethod()
     .AllowCredentials()
-    .WithOrigins("http://localhost:4200", "https://localhost:4200"));
+    .WithOrigins(builder.Configuration["Frontend:Url"], "http://localhost:4200"));
 }
 else
 {
@@ -40,7 +40,7 @@ else
 		.WithOrigins("https://localhost:4200")); 
 }
 
-    app.UseAuthentication();
+app.UseAuthentication();
 app.UseAuthorization();
 
 app.UseDefaultFiles();

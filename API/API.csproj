@@ -21,6 +21,9 @@
     <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.2.1" />
   </ItemGroup>
   <ItemGroup>
-    <Folder Include="hotel\" />
+    <Folder Include="wwwroot\assets\hotel\" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="wwwroot\assets\hotel\bedroom.jpg" />
   </ItemGroup>
 </Project>

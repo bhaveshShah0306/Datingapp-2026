@@ -13,5 +13,19 @@ namespace API.Extensions
         {
             return int.Parse(user.FindFirst(ClaimTypes.NameIdentifier)?.Value);
         }
-    }
+		public static string GetUserTier(this ClaimsPrincipal user)
+		{
+			return user.FindFirst("tier")?.Value ?? "Free";
+		}
+		public static bool IsPremiumUser(this ClaimsPrincipal user)
+		{
+			return user.GetUserTier() == "Premium";
+		}
+
+		public static bool IsFreeOrAbove(this ClaimsPrincipal user)
+		{
+			var tier = user.GetUserTier();
+			return tier == "Free" || tier == "Premium";
+		}
+	}
 }

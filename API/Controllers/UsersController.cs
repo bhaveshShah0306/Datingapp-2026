@@ -36,10 +36,14 @@ namespace API.Controllers
 		}
 
 		[HttpGet]
-		[AllowAnonymous]
+		[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
 		[HttpGet("discover")]		
 		public async Task<ActionResult<IEnumerable<Guid>>> GetDiscoverUsers()
 		{
+			var username = User.GetUsername();
+
+			if (string.IsNullOrWhiteSpace(username))
+				return Unauthorized("Invalid authentication context.");
 			try
 			{
 				var userIds = await _discoverService.GetFeedAsync(User);

@@ -25,29 +25,32 @@ namespace API.Services;
 		public async Task<IEnumerable<Guid>> GetFeedAsync(ClaimsPrincipal user)
 		{
 
-
+		if (user?.Identity?.IsAuthenticated != true || string.IsNullOrEmpty(user.Identity.Name))
+		{
+			throw new UnauthorizedAccessException("User must be authenticated");
+		}
 		var me = await _repo.GetMemberAsync(user.Identity!.Name!);
 
 		var maleRatio = await _stats.GetMaleFemaleRatio(me.Country);
 		var boost = _exposure.FromRatio(maleRatio);
 
-		////var candidates = await _repo.GetCandidates(me);
+		//var candidates = await _repo.GetMembersAsync(user);
 
 		//var weighted = candidates.Select(c => new
 		//{
 		//	c.Id,
 		//	Weight = _scorer.Score(
-		//		//me.Rating,
+		//		me.Rating,
 		//		c.Rating,
 		//		c.Gender,
 		//		boost)
 		//});
 
-		return new List<Guid>();
-			//weighted
-			//	.OrderByDescending(x => Random.Shared.NextDouble() * x.Weight)
-			//	.Take(50)
-			//	.Select(x => x.Id);
-		}
+		return Enumerable.Empty<Guid>();
+		//return weighted
+		//	.OrderByDescending(x => Random.Shared.NextDouble() * x.Weight)
+		//	.Take(50)
+		//	.Select(x => x.Id);
+	}
 	}
 
