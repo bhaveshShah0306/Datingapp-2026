@@ -22,19 +22,26 @@
 
 			public async Task SendPasswordResetEmailAsync(string email, string resetLink)
 			{
-				var subject = "Reset Your Password";
+				var subject = "Reset Your Password - Empath Dating App";
 				var body = $@"
-                <html>
-                <body>
-                    <h2>Password Reset Request</h2>
-                    <p>You requested to reset your password. Click the link below to reset it:</p>
-                    <p><a href='{resetLink}'>Reset Password</a></p>
-                    <p>This link will expire in {_config["PasswordReset:ExpiryHours"]} hours.</p>
-                    <p>If you didn't request this, please ignore this email.</p>
-                    <br/>
-                    <p>Best regards,<br/>Your Dating App Team</p>
-                </body>
-                </html>";
+    <html>
+    <body style='font-family: Arial, sans-serif; padding: 20px;'>
+        <div style='max-width: 600px; margin: 0 auto; border: 1px solid #ddd; padding: 20px; border-radius: 5px;'>
+            <h2 style='color: #333;'>Password Reset Request</h2>
+            <p>Hello,</p>
+            <p>You requested to reset your password. Click the button below to reset it:</p>
+            <div style='text-align: center; margin: 30px 0;'>
+                <a href='{resetLink}' style='background-color: #4CAF50; color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px; display: inline-block;'>Reset Password</a>
+            </div>
+            <p>Or copy and paste this link in your browser:</p>
+            <p style='word-break: break-all; color: #666;'>{resetLink}</p>
+            <p>This link will expire in {_config["PasswordReset:ExpiryHours"]} hours.</p>
+            <p><strong>If you didn't request this, please ignore this email and your password will remain unchanged.</strong></p>
+            <hr style='margin: 20px 0; border: none; border-top: 1px solid #ddd;'>
+            <p style='color: #666; font-size: 12px;'>Best regards,<br/>Empath Dating App Team</p>
+        </div>
+    </body>
+    </html>";
 
 				await SendEmailAsync(email, subject, body);
 			}

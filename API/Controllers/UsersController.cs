@@ -1,187 +1,198 @@
-using System.Collections.Generic;
-using System.Linq;
-using System.Security.Claims;
-using System.Threading.Tasks;
-using API.Data;
-using API.DTOs;
-using API.Entities;
-using API.Extensions;
-using API.Helpers;
-using API.Interfaces;
-using AutoMapper;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
+	using System.Collections.Generic;
+	using System.Linq;
+	using System.Security.Claims;
+	using System.Threading.Tasks;
+	using API.Data;
+	using API.DTOs;
+	using API.Entities;
+	using API.Extensions;
+	using API.Helpers;
+	using API.Interfaces;
+	using AutoMapper;
+	using Microsoft.AspNetCore.Authentication.JwtBearer;
+	using Microsoft.AspNetCore.Authorization;
+	using Microsoft.AspNetCore.Http;
+	using Microsoft.AspNetCore.Mvc;
+	using Microsoft.EntityFrameworkCore;
 
-namespace API.Controllers
-{
-	[Authorize]
-	public class UsersController : BaseApiController
+	namespace API.Controllers
 	{
-		private readonly IMapper _mapper;
-		private readonly IPhotoService _photoService;
-		private readonly IUnitOfWork _unitOfWork;
-		private readonly IDiscoveryService _discoverService;
-		public UsersController(IUnitOfWork unitOfWork, IMapper mapper,
-				IPhotoService photoService
-			, IDiscoveryService discoveryService
-			)
+		[Authorize]
+		public class UsersController : BaseApiController
 		{
-			_unitOfWork = unitOfWork;
-			_discoverService = discoveryService;
-			_photoService = photoService;
-			_mapper = mapper;
-		}
-
-		[HttpGet]
-		[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
-		[HttpGet("discover")]		
-		public async Task<ActionResult<IEnumerable<Guid>>> GetDiscoverUsers()
-		{
-			var username = User.GetUsername();
-
-			if (string.IsNullOrWhiteSpace(username))
-				return Unauthorized("Invalid authentication context.");
-			try
+			private readonly IMapper _mapper;
+			private readonly IPhotoService _photoService;
+			private readonly IUnitOfWork _unitOfWork;
+			private readonly IDiscoveryService _discoverService;
+			public UsersController(IUnitOfWork unitOfWork, IMapper mapper,
+					IPhotoService photoService
+				, IDiscoveryService discoveryService
+				)
 			{
-				var userIds = await _discoverService.GetFeedAsync(User);
-				return Ok(userIds);
-			}
-			catch (UnauthorizedAccessException)
-			{
-				return Unauthorized();
-			}
-			catch (Exception ex)
-			{
-				return BadRequest(new { error = ex.Message });
-			}
-		}
-		[HttpGet]
-		[AllowAnonymous]
-		public async Task<ActionResult<IEnumerable<MemberDto>>> GetUsers([FromQuery] UserParams userParams)
-		{
-			if (userParams.CurrentUsername == null &&
-				User?.Identity?.IsAuthenticated == true)
-			{
-				userParams.CurrentUsername = User.GetUsername();
-			}
-			else if (userParams.CurrentUsername == null && User?.Identity?.IsAuthenticated == false)
-			{
-				return Unauthorized();
+				_unitOfWork = unitOfWork;
+				_discoverService = discoveryService;
+				_photoService = photoService;
+				_mapper = mapper;
 			}
 
-			//if (!HasAccess(userParams))
+			//[HttpGet]
+			//[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+			//[HttpGet("discover")]		
+			//public async Task<ActionResult<IEnumerable<Guid>>> GetDiscoverUsers()
 			//{
-			//	return Forbid(); // authenticated but not allowed
+			//	var username = User.GetUsername();
+
+			//	if (string.IsNullOrWhiteSpace(username))
+			//		return Unauthorized("Invalid authentication context.");
+			//	try
+			//	{
+			//		var userIds = await _discoverService.GetFeedAsync(User);
+			//		return Ok(userIds);
+			//	}
+			//	catch (UnauthorizedAccessException)
+			//	{
+			//		return Unauthorized();
+			//	}
+			//	catch (Exception ex)
+			//	{
+			//		return BadRequest(new { error = ex.Message });
+			//	}
 			//}
-			var gender = await _unitOfWork.UserRepository.GetUserGender(User.GetUsername());
-			userParams.CurrentUsername = User.GetUsername();
+			[HttpGet]
+			[AllowAnonymous]
+			public async Task<ActionResult<IEnumerable<MemberDto>>> GetUsers(UserParams userParams)
+			 {
+			//if (userParams.CurrentUsername == null &&
+			//	User?.Identity?.IsAuthenticated == true)
+			//{
+			//	userParams.CurrentUsername = User.GetUsername();
+			//}
+			//else if (userParams.CurrentUsername == null && User?.Identity?.IsAuthenticated == false)
+			//{
+			//	return Unauthorized();
+			//}
+			if (!User.Identity.IsAuthenticated)
+			{
+				userParams.CurrentUsername = null;
+				userParams.Gender ??= "Male";
+				
+			}
+			else
+			{
+				userParams.CurrentUsername =User.GetUsername();
+				userParams.Gender = "male" ;
 
-			if (string.IsNullOrEmpty(userParams.Gender))
-				userParams.Gender = gender == "male" ? "female" : "male";
+			}
+				//if (!HasAccess(userParams))
+				//{
+				//	return Forbid(); // authenticated but not allowed
+				//}
+				var gender = await _unitOfWork.UserRepository.GetUserGender(User.GetUsername());
+				userParams.CurrentUsername = User.GetUsername();
 
-			var users = await _unitOfWork.UserRepository.GetMembersAsync(userParams);
+				if (string.IsNullOrEmpty(userParams.Gender))
+					userParams.Gender = gender == "male" ? "male" : "female";
 
-			Response.AddPaginationHeader(users.CurrentPage, users.PageSize,
-				users.TotalCount, users.TotalPages);
+				var users = await _unitOfWork.UserRepository.GetMembersAsync(userParams);
 
-			return Ok(users);
+				Response.AddPaginationHeader(users.CurrentPage, users.PageSize,
+					users.TotalCount, users.TotalPages);
+				return Ok(users.ToList());
+			
+			}
+
+			[HttpGet("{username}", Name = "GetUser")]
+			public async Task<ActionResult<MemberDto>> GetUser(string username)
+			{
+				return await _unitOfWork.UserRepository.GetMemberAsync(username);
+			}
+
+			[HttpPut]
+			public async Task<ActionResult> UpdateUser(MemberUpdateDto memberUpdateDto)
+			{
+
+				var user = await _unitOfWork.UserRepository.GetUserByUsernameAsync(User.GetUsername());
+
+				_mapper.Map(memberUpdateDto, user);
+
+				_unitOfWork.UserRepository.Update(user);
+
+				if (await _unitOfWork.Complete()) return NoContent();
+
+				return BadRequest("Failed to update user");
+			}
+
+			//[HttpPost("add-photo")]
+			//public async Task<ActionResult<PhotoDto>> AddPhoto(IFormFile file)
+			//{
+			//	var user = await _unitOfWork.UserRepository.GetUserByUsernameAsync(User.GetUsername());
+
+			//	var result = await _photoService.AddPhotoAsync(file);
+
+			//	if (result.Error != null) return BadRequest(result.Error.Message);
+
+			//	var photo = new Photo
+			//	{
+			//		Url = result.SecureUrl.AbsoluteUri,
+			//		PublicId = result.PublicId
+			//	};
+
+			//	if (user.Photos.Count == 0)
+			//	{
+			//		photo.IsMain = true;
+			//	}
+
+			//	user.Photos.Add(photo);
+
+			//	if (await _unitOfWork.Complete())
+			//	{
+			//		return CreatedAtRoute("GetUser", new { username = user.UserName }, _mapper.Map<PhotoDto>(photo));
+			//	}
+
+
+			//	return BadRequest("Problem addding photo");
+			//	//}
+
+			//	[HttpPut("set-main-photo/{photoId}")]
+			//	public async Task<ActionResult> SetMainPhoto(int photoId)
+			//	{
+			//		var user = await _unitOfWork.UserRepository.GetUserByUsernameAsync(User.GetUsername());
+
+			//		var photo = user.Photos.FirstOrDefault(x => x.Id == photoId);
+
+			//		if (photo.IsMain) return BadRequest("This is already your main photo");
+
+			//		var currentMain = user.Photos.FirstOrDefault(x => x.IsMain);
+			//		if (currentMain != null) currentMain.IsMain = false;
+			//		photo.IsMain = true;
+
+			//		if (await _unitOfWork.Complete()) return NoContent();
+
+			//		return BadRequest("Failed to set main photo");
+			//	}
+
+			//	[HttpDelete("delete-photo/{photoId}")]
+			//	public async Task<ActionResult> DeletePhoto(int photoId)
+			//	{
+			//		var user = await _unitOfWork.UserRepository.GetUserByUsernameAsync(User.GetUsername());
+
+			//		var photo = user.Photos.FirstOrDefault(x => x.Id == photoId);
+
+			//		if (photo == null) return NotFound();
+
+			//		if (photo.IsMain) return BadRequest("You cannot delete your main photo");
+
+			//		if (photo.PublicId != null)
+			//		{
+			//			var result = await _photoService.DeletePhotoAsync(photo.PublicId);
+			//			if (result.Error != null) return BadRequest(result.Error.Message);
+			//		}
+
+			//		user.Photos.Remove(photo);
+
+			//		if (await _unitOfWork.Complete()) return Ok();
+
+			//		return BadRequest("Failed to delete the photo");
+			//	}
+			}
 		}
-
-		[HttpGet("{username}", Name = "GetUser")]
-		public async Task<ActionResult<MemberDto>> GetUser(string username)
-		{
-			return await _unitOfWork.UserRepository.GetMemberAsync(username);
-		}
-
-		[HttpPut]
-		public async Task<ActionResult> UpdateUser(MemberUpdateDto memberUpdateDto)
-		{
-
-			var user = await _unitOfWork.UserRepository.GetUserByUsernameAsync(User.GetUsername());
-
-			_mapper.Map(memberUpdateDto, user);
-
-			_unitOfWork.UserRepository.Update(user);
-
-			if (await _unitOfWork.Complete()) return NoContent();
-
-			return BadRequest("Failed to update user");
-		}
-
-		//[HttpPost("add-photo")]
-		//public async Task<ActionResult<PhotoDto>> AddPhoto(IFormFile file)
-		//{
-		//	var user = await _unitOfWork.UserRepository.GetUserByUsernameAsync(User.GetUsername());
-
-		//	var result = await _photoService.AddPhotoAsync(file);
-
-		//	if (result.Error != null) return BadRequest(result.Error.Message);
-
-		//	var photo = new Photo
-		//	{
-		//		Url = result.SecureUrl.AbsoluteUri,
-		//		PublicId = result.PublicId
-		//	};
-
-		//	if (user.Photos.Count == 0)
-		//	{
-		//		photo.IsMain = true;
-		//	}
-
-		//	user.Photos.Add(photo);
-
-		//	if (await _unitOfWork.Complete())
-		//	{
-		//		return CreatedAtRoute("GetUser", new { username = user.UserName }, _mapper.Map<PhotoDto>(photo));
-		//	}
-
-
-		//	return BadRequest("Problem addding photo");
-		//	//}
-
-		//	[HttpPut("set-main-photo/{photoId}")]
-		//	public async Task<ActionResult> SetMainPhoto(int photoId)
-		//	{
-		//		var user = await _unitOfWork.UserRepository.GetUserByUsernameAsync(User.GetUsername());
-
-		//		var photo = user.Photos.FirstOrDefault(x => x.Id == photoId);
-
-		//		if (photo.IsMain) return BadRequest("This is already your main photo");
-
-		//		var currentMain = user.Photos.FirstOrDefault(x => x.IsMain);
-		//		if (currentMain != null) currentMain.IsMain = false;
-		//		photo.IsMain = true;
-
-		//		if (await _unitOfWork.Complete()) return NoContent();
-
-		//		return BadRequest("Failed to set main photo");
-		//	}
-
-		//	[HttpDelete("delete-photo/{photoId}")]
-		//	public async Task<ActionResult> DeletePhoto(int photoId)
-		//	{
-		//		var user = await _unitOfWork.UserRepository.GetUserByUsernameAsync(User.GetUsername());
-
-		//		var photo = user.Photos.FirstOrDefault(x => x.Id == photoId);
-
-		//		if (photo == null) return NotFound();
-
-		//		if (photo.IsMain) return BadRequest("You cannot delete your main photo");
-
-		//		if (photo.PublicId != null)
-		//		{
-		//			var result = await _photoService.DeletePhotoAsync(photo.PublicId);
-		//			if (result.Error != null) return BadRequest(result.Error.Message);
-		//		}
-
-		//		user.Photos.Remove(photo);
-
-		//		if (await _unitOfWork.Complete()) return Ok();
-
-		//		return BadRequest("Failed to delete the photo");
-		//	}
-		}
-	}

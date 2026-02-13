@@ -14,7 +14,7 @@ namespace API.Extensions
                cfg.AddProfile<AutoMapperProfiles>(); 
             });
             services.AddHttpClient();
-            services.AddSingleton<PresenceTracker>();
+            //services.AddSingleton<PresenceTracker>();
 			services.AddScoped<CloudinaryService>();
             services.AddScoped<ExposurePolicyService>();
 			services.Configure<CloudinarySettings>(config.GetSection("CloudinarySettings"));

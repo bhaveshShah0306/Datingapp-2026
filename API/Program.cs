@@ -23,7 +23,6 @@ var app = builder.Build();
 
 app.UseMiddleware<ExceptionMiddleware>();
 
-app.UseHttpsRedirection();
 
 if (app.Environment.IsDevelopment())
 {
@@ -40,15 +39,18 @@ else
 		.WithOrigins("https://localhost:4200")); 
 }
 
+app.UseHttpsRedirection();
 app.UseAuthentication();
 app.UseAuthorization();
 
 app.UseDefaultFiles();
 app.UseStaticFiles();
 
+//app.UseCors(options => options.AllowAnyHeader().AllowAnyMethod().WithOrigins("http://localhost:4200", "https://localhost:4200").AllowCredentials());
+
 app.MapControllers();
 app.MapHub<PresenceHub>("hubs/presence");
-app.MapHub<MessageHub>("hubs/message");
+//app.MapHub<MessageHub>("hubs/message");
 app.MapFallbackToController("Index", "Fallback");
 
 AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);

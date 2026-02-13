@@ -46,9 +46,9 @@ public class AccountController : BaseApiController
 
         return new UserDto
         {
-            Username = user.UserName,
-            Token = await _tokenService.CreateToken(user),
+            Username = user.UserName,            
             KnownAs = user.KnownAs,
+			Token = await _tokenService.CreateToken(user),
             Gender = user.Gender
         };
     }
@@ -70,9 +70,9 @@ public class AccountController : BaseApiController
 
 		return new UserDto
         {
-            Username = user.UserName,
-            Token = await _tokenService.CreateToken(user),
+            Username = user.UserName,            
             //PhotoUrl = user.Photos.FirstOrDefault(x => x.IsMain)?.Url,
+			Token = await _tokenService.CreateToken(user),
             KnownAs = user.KnownAs,
             Gender = user.Gender
         };
@@ -87,7 +87,7 @@ public class AccountController : BaseApiController
 		{
 			return Ok(new PasswordResetResponseDto
 			{
-				Success = true, 
+				Success = true,
 				Message = "If an account exists with that email, a password reset link has been sent."
 			});
 		}
@@ -95,20 +95,22 @@ public class AccountController : BaseApiController
 		// Generate password reset token
 		var token = await _userManager.GeneratePasswordResetTokenAsync(user);
 
-		// Create reset link (you'll need to update this with your actual frontend URL)
+		// Create reset link
 		var frontendUrl = _config["Frontend:Url"] ?? "http://localhost:4200";
 		var encodedToken = HttpUtility.UrlEncode(token);
 		var encodedEmail = HttpUtility.UrlEncode(forgotPasswordDto.Email);
 		var resetLink = $"{frontendUrl}/reset-password?token={encodedToken}&email={encodedEmail}";
 
+		_logger.LogInformation($"Password reset requested for {forgotPasswordDto.Email}");
+
 		try
 		{
 			await _emailService.SendPasswordResetEmailAsync(forgotPasswordDto.Email, resetLink);
+			_logger.LogInformation($"Password reset email sent successfully to {forgotPasswordDto.Email}");
 		}
 		catch (Exception ex)
 		{
-			// Log the error but don't expose it to the user
-			Console.WriteLine($"Failed to send password reset email: {ex.Message}");
+			_logger.LogError($"Failed to send password reset email to {forgotPasswordDto.Email}: {ex.Message}");
 			return StatusCode(500, new PasswordResetResponseDto
 			{
 				Success = false,
@@ -122,7 +124,50 @@ public class AccountController : BaseApiController
 			Message = "If an account exists with that email, a password reset link has been sent."
 		});
 	}
+	[HttpPost("reset-password")]
+	public async Task<ActionResult<PasswordResetResponseDto>> ResetPassword(ResetPasswordDto resetPasswordDto)
+	{
+		var user = await _userManager.FindByEmailAsync(resetPasswordDto.Email);
 
+		if (user == null)
+		{
+			return BadRequest(new PasswordResetResponseDto
+			{
+				Success = false,
+				Message = "Invalid password reset request."
+			});
+		}
+
+		// Verify the token
+		var result = await _userManager.ResetPasswordAsync(user, resetPasswordDto.Token, resetPasswordDto.NewPassword);
+
+		if (!result.Succeeded)
+		{
+			var errors = string.Join(", ", result.Errors.Select(e => e.Description));
+			return BadRequest(new PasswordResetResponseDto
+			{
+				Success = false,
+				Message = $"Password reset failed: {errors}"
+			});
+		}
+
+		// Optional: Send confirmation email
+		try
+		{
+			await _emailService.SendWelcomeEmailAsync(user.Email, user.UserName);
+		}
+		catch (Exception ex)
+		{
+			_logger.LogError($"Failed to send confirmation email: {ex.Message}");
+			// Don't fail the reset if email fails
+		}
+
+		return Ok(new PasswordResetResponseDto
+		{
+			Success = true,
+			Message = "Your password has been reset successfully."
+		});
+	}
 
 	private async Task<bool> UserExists(string username)
     {
