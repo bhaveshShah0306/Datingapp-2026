@@ -58,7 +58,8 @@ public class AccountController : BaseApiController
     {
         var user = await _userManager.Users
             //.Include(subject)
-                        .SingleOrDefaultAsync(x => x.UserName == loginDto.Username.ToLower());
+                        .SingleOrDefaultAsync(x => x.UserName == loginDto.Username.ToLower()||
+												   x.Email == loginDto.Username.ToLower());
 
         if (user == null) return Unauthorized("Invalid username");
     

@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.SignalR;
+using Microsoft.IdentityModel.JsonWebTokens;
 using System.Security.Claims;
 
 namespace API.SignalR
@@ -8,12 +9,37 @@ namespace API.SignalR
 	{
 		public override async Task OnConnectedAsync()
 		{
-			await Clients.Others.SendAsync("UserOnline", Context.User?.FindFirstValue(ClaimTypes.Email));
+			// ✅ Use UniqueName claim (which contains UserName from token)
+			var username = Context.User?.FindFirstValue(JwtRegisteredClaimNames.UniqueName);
+
+			// Fallback to Name claim if UniqueName is not found
+			username ??= Context.User?.FindFirstValue(ClaimTypes.Name);
+
+			Console.WriteLine($"✅ User connected: {username ?? "Unknown"}");
+
+			if (!string.IsNullOrEmpty(username))
+			{
+				await Clients.Others.SendAsync("UserOnline", username);
+			}
+
+			await base.OnConnectedAsync();
 		}
 
-		public override async Task OnDisconnectedAsync(Exception exception)
+		public override async Task OnDisconnectedAsync(Exception? exception)
 		{
-			await Clients.Others.SendAsync("UserOffline", Context.User?.FindFirstValue(ClaimTypes.Email));
+			// ✅ Use UniqueName claim (which contains UserName from token)
+			var username = Context.User?.FindFirstValue(JwtRegisteredClaimNames.UniqueName);
+
+			// Fallback to Name claim if UniqueName is not found
+			username ??= Context.User?.FindFirstValue(ClaimTypes.Name);
+
+			Console.WriteLine($"❌ User disconnected: {username ?? "Unknown"}");
+
+			if (!string.IsNullOrEmpty(username))
+			{
+				await Clients.Others.SendAsync("UserOffline", username);
+			}
+
 			await base.OnDisconnectedAsync(exception);
 		}
 	}

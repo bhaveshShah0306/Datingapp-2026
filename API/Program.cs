@@ -21,15 +21,16 @@ builder.Services.AddSignalR();
 
 var app = builder.Build();
 
-app.UseMiddleware<ExceptionMiddleware>();
+
 
 
 if (app.Environment.IsDevelopment())
-{
-    app.UseCors(x => x.AllowAnyHeader()
+{	
+	app.UseCors(x => x.AllowAnyHeader()
     .AllowAnyMethod()
     .AllowCredentials()
-    .WithOrigins(builder.Configuration["Frontend:Url"], "http://localhost:4200"));
+	.SetIsOriginAllowed(_ => true)
+	.WithOrigins("https://localhost:4200", "http://localhost:4200"));
 }
 else
 {
@@ -46,10 +47,8 @@ app.UseAuthorization();
 app.UseDefaultFiles();
 app.UseStaticFiles();
 
-//app.UseCors(options => options.AllowAnyHeader().AllowAnyMethod().WithOrigins("http://localhost:4200", "https://localhost:4200").AllowCredentials());
-
-app.MapControllers();
 app.MapHub<PresenceHub>("hubs/presence");
+app.MapControllers();
 //app.MapHub<MessageHub>("hubs/message");
 app.MapFallbackToController("Index", "Fallback");
 
@@ -69,5 +68,5 @@ catch (Exception ex)
     var logger = services.GetRequiredService<ILogger<Program>>();
     logger.LogError(ex, "An error occurred during migration");
 }
-
+app.UseMiddleware<ExceptionMiddleware>();
 await app.RunAsync();
