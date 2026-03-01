@@ -8,19 +8,20 @@ var builder = WebApplication.CreateBuilder(args);
 
 // add services to the container
 builder.Services.AddApplicationServices(builder.Configuration);
+
 builder.Services.AddIdentityServices(builder.Configuration);
 
 builder.Services.AddControllers();
 builder.Services.AddCors();
                 
 builder.Services.AddSignalR();
-
+builder.Services.AddSingleton<PresenceTracker>();
 
 
 // Configure the HTTP request pipeline
 
 var app = builder.Build();
-
+app.UseMiddleware<ExceptionMiddleware>();
 
 
 
